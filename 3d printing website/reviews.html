@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Reviews - 3D Printed Fidgets</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #222;
+      color: white;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    nav {
+      background: #444;
+      text-align: center;
+      padding: 0.5rem;
+    }
+    nav a {
+      color: white;
+      margin: 0 1rem;
+      text-decoration: none;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 1rem;
+    }
+    #review-table {
+      margin-top: 1rem;
+    }
+    .google-visualization-table-th {
+      background-color: #444;
+      color: white;
+      padding: 10px 8px;
+      font-weight: bold;
+      border-bottom: 2px solid #222;
+      text-align: left;
+    }
+    .google-visualization-table-td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+      font-size: 1.1em;
+    }
+    .google-visualization-table-tr-even {
+      background-color: #f9f9f9;
+    }
+    .google-visualization-table-tr-odd {
+      background-color: #fff;
+    }
+    iframe {
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Customer Reviews</h1>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="gallery.html">Gallery</a>
+  <a href="about.html">About / COMAT</a>
+  <a href="contact.html">Contact</a>
+  <a href="reviews.html">Reviews</a>
+</nav>
+
+<div class="container" id="live-reviews">
+  <h2>What People Are Saying</h2>
+  <div id="review-table">Loading live reviews...</div>
+</div>
+
+<div class="container" id="submit-review">
+  <h2>Submit Your Own Review</h2>
+  <iframe 
+    src="https://docs.google.com/forms/d/e/1FAIpQLSeENFw3-Nm5rxnKn2GHGs7uNQa6W6DcouILRRf5gCgbS9uK7A/viewform?embedded=true" 
+    width="100%" 
+    height="700"
+  >
+    Loading…
+  </iframe>
+  <p style="text-align:center; margin-top: 1rem;">
+    Or <a href="https://docs.google.com/forms/d/e/1FAIpQLSeENFw3-Nm5rxnKn2GHGs7uNQa6W6DcouILRRf5gCgbS9uK7A/viewform" target="_blank" rel="noopener">open the form in a new tab</a>.
+  </p>
+</div>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+  google.charts.load('current', { packages: ['table'] });
+  google.charts.setOnLoadCallback(drawTable);
+
+  function stars(rating) {
+    const maxStars = 5;
+    let fullStars = Math.round(rating);
+    let starStr = '';
+    for (let i = 0; i < maxStars; i++) {
+      starStr += i < fullStars ? '★' : '☆';
+    }
+    return starStr;
+  }
+
+  function drawTable() {
+    const query = new google.visualization.Query(
+      "https://docs.google.com/spreadsheets/d/1wD_Bx2ybwVlMdUph59cotEI1Nn7SdAU5GAEEP-fbqc8/gviz/tq?sheet=3D%20Fidget%20Reviews%20%28Responses%29&tq=" + 
+      encodeURIComponent("select * order by A desc limit 10")
+    );
+
+    query.send(function(response) {
+      if (response.isError()) {
+        document.getElementById('review-table').innerHTML = 'Error loading reviews.';
+        console.error('Error fetching data:', response.getMessage(), response.getDetailedMessage());
+        return;
+      }
+
+      let oldData = response.getDataTable();
+
+      // Create new DataTable with same columns except rating column (index 3) set to string type
+      const newData = new google.visualization.DataTable();
+
+      // Remove Timestamp column from newData
+      for(let col = 1; col < oldData.getNumberOfColumns(); col++) {
+        let label = oldData.getColumnLabel(col);
+        let type = oldData.getColumnType(col);
+
+        // Change Rating column (original index 3, but we start from 1 here)
+        // Since Timestamp col removed, index 1->Name, 2->Review, 3->Rating, so rating col index = 3 - 1 = 2
+        if(col === 4) { // original col 4 = index 3 zero based? Let's double-check:
+          // Your order: 0=Timestamp,1=Name,2=Review,3=Rating
+          // So original Rating is col 3 (zero-based), which corresponds to col=4 in 1-based counting? No, the API getNumberOfColumns is zero-based.
+          // So col 0=Timestamp, 1=Name, 2=Review, 3=Rating
+          // So col === 3 is rating column
+          // But we are looping from col=1 (skipping Timestamp), so rating col in newData is index 3-1=2
+        }
+        if(col === 3) {
+          // rating column: set as string
+          newData.addColumn('string', label);
+        } else {
+          newData.addColumn(type, label);
+        }
+      }
+
+      // Copy rows, convert rating column (index 2 in newData) to stars string
+      for(let row = 0; row < oldData.getNumberOfRows(); row++) {
+        let rowData = [];
+        for(let col = 1; col < oldData.getNumberOfColumns(); col++) {
+          let val = oldData.getValue(row, col);
+          if(col === 3) { // rating col in oldData
+            let ratingValue = parseFloat(val);
+            if(!isNaN(ratingValue)) {
+              rowData.push(stars(ratingValue));
+            } else {
+              rowData.push(val);
+            }
+          } else {
+            rowData.push(val);
+          }
+        }
+        newData.addRow(rowData);
+      }
+
+      // Set custom headers explicitly (optional)
+      newData.setColumnLabel(0, 'Name');
+      newData.setColumnLabel(1, 'Review');
+      newData.setColumnLabel(2, 'Rating');
+
+      const table = new google.visualization.Table(document.getElementById('review-table'));
+      table.draw(newData, {
+        showRowNumber: false,
+        width: '100%',
+        cssClassNames: {
+          headerRow: 'google-visualization-table-tr-even',
+          tableRow: 'google-visualization-table-tr-odd',
+          oddTableRow: 'google-visualization-table-tr-odd',
+          evenTableRow: 'google-visualization-table-tr-even',
+          headerCell: 'google-visualization-table-th',
+          tableCell: 'google-visualization-table-td'
+        }
+      });
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Tracking</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+    }
+    header {
+      background: #222;
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      position: relative;
+    }
+    .back-btn {
+      position: absolute;
+      left: 1rem;
+      top: 1.25rem;
+      background: #444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .back-btn:hover { background: #666; }
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: .8rem;
+      margin-top: .5rem;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    button {
+      width: 100%;
+      padding: .8rem;
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #444; }
+    .result {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #eee;
+      border-radius: 6px;
+    }
+    .notfound {
+      background: #ffcccc;
+      color: #900;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="back-btn" onclick="goBack()">Back</button>
+  <h1>Track Your Order</h1>
+</header>
+
+<div class="container">
+  <h2>Enter Tracking Code</h2>
+  <input id="codeInput" placeholder="Enter tracking code">
+  <button onclick="lookup()">Track</button>
+
+  <div id="result" class="result"></div>
+</div>
+
+<script>
+/* ---------------- CSV LINK ---------------- */
+const CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4NWDZhNRGBXL71IdtjWvKv2gTLDBSzmL8h3efQB2x-TlBuFSHTm5dcdxnRpSj6wCoFHnVx3CeRkP9/pub?gid=0&single=true&output=csv";
+
+let orders = {};
+
+fetch(CSV_URL)
+  .then(res => res.text())
+  .then(csv => {
+    const rows = csv.split("\n").map(r => r.trim()).filter(r => r.length > 0);
+
+    rows.slice(1).forEach(row => {
+      const cols = row.split(",");
+      const code = cols[0]?.toUpperCase().trim();
+      const item = cols[1]?.trim();
+      const status = cols[2]?.trim();
+      const eta = cols[3]?.trim();
+
+      if (code) {
+        orders[code] = { item, status, eta };
+      }
+    });
+  });
+
+function lookup() {
+  const input = document.getElementById("codeInput").value.trim().toUpperCase();
+  const box = document.getElementById("result");
+
+  if (!orders[input]) {
+    box.style.display = "block";
+    box.className = "result notfound";
+    box.textContent = "Tracking code not found.";
+    return;
+  }
+
+  const o = orders[input];
+  box.style.display = "block";
+  box.className = "result";
+  box.innerHTML = `
+    <strong>Item:</strong> ${o.item}<br>
+    <strong>Status:</strong> ${o.status}<br>
+    <strong>ETA:</strong> ${o.eta}
+  `;
+}
+
+/* ---------------- Back button ---------------- */
+function goBack() {
+  // Change "index.html" to the page you want to return to
+  window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
