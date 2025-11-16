@@ -5,54 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>3D Printed Fidgets</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: #f4f4f4;
-      color: #333;
-    }
-    header {
-      background: #222;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    nav {
-      background: #444;
-      text-align: center;
-      padding: 0.5rem;
-    }
-    nav a {
-      color: white;
-      margin: 0 1rem;
-      text-decoration: none;
-    }
-    .container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-    .gallery img {
-      width: 100%;
-      height: 200px;
-      object-fit: contain;
-      background: #fff;
-      border-radius: 8px;
-    }
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background: #222;
-      color: white;
-      margin-top: 2rem;
-    }
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; color:#333; }
+    header { background:#222; color:white; padding:1rem; text-align:center; }
+    nav { background:#444; text-align:center; padding:0.5rem; }
+    nav a { color:white; margin:0 1rem; text-decoration:none; }
+    .container { max-width:1000px; margin:2rem auto; padding:1rem; background:white; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    .gallery { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; }
+    .gallery img { width:100%; height:200px; object-fit:contain; background:#fff; border-radius:8px; }
+    footer { text-align:center; padding:1rem; background:#222; color:white; margin-top:2rem; }
+
+    /* Sales Banner Styles */
+    .sale-banner { text-align:center; margin:2rem 0; overflow:hidden; max-height:0; transition:max-height 1s ease; position:relative; }
+    .sale-banner img { max-width:100%; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); cursor:pointer; }
+    .sale-timer { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:white; padding:5px 10px; border-radius:5px; font-weight:bold; font-size:0.9rem; }
   </style>
 </head>
 <body>
@@ -62,20 +27,22 @@
   <p>Spin, click, snap, and relax!</p>
 </header>
 
+<!-- Sales Banners Container -->
+<div id="salesBanners"></div>
+
 <nav>
   <a href="#home">Home</a>
   <a href="gallery.html">Gallery</a>
   <a href="#contact">Contact</a>
   <a href="about.html">About / COMAT</a>
   <a href="reviews.html">Reviews</a>
-  <a href="tracking.html">Track Order</a> <!-- NEW -->
+  <a href="tracking.html">Tracking</a>
 </nav>
 
 <div class="container" id="home">
   <h2>Welcome!</h2>
   <p>We design and 3D print custom fidget toys that help you focus, calm down, or just have fun. Everything is hand-tested and made with care.</p>
-  <p><p>
-  <p>please note this website is not updated often. last update was in saturday<p>
+  <p>Please note this website is not updated often. Last update was in June 2025.</p>
 </div>
 
 <div class="container" id="gallery">
@@ -91,11 +58,86 @@
   <h2>Contact Us</h2>
   <p>Want wholesale order? Reach out:</p>
   <ul>
-    <li>support: <a href="https://forms.gle/9JyEeqmHFFtJ9JCH6">click here</a></li>
-    <li>buy: <a href="https://forms.gle/cmwfqBcy7TdNBu6m6">click here</a></li>
+    <li>Support: <a href="https://forms.gle/9JyEeqmHFFtJ9JCH6">click here</a></li>
+    <li>Buy: <a href="https://forms.gle/cmwfqBcy7TdNBu6m6">click here</a></li>
     <li>Comat: <a href="https://www.comateams.org">click here</a></li>
   </ul>
 </div>
+
+<footer>
+  &copy; 2025 3D Printed Fidgets
+</footer>
+
+<script>
+// Recurring sales (month/day only)
+const sales = [
+  { name:"Christmas Sale", image:"images/christmas-sale.png", link:"#", startMonth:12, startDay:1, endMonth:1, endDay:5 },
+  { name:"Summer Sale", image:"images/summer-sale.png", link:"#", startMonth:6, startDay:1, endMonth:6, endDay:15 }
+];
+
+const today = new Date();
+const thisYear = today.getFullYear();
+const container = document.getElementById("salesBanners");
+
+// Helper to get next date object
+function getDate(month, day){
+  let year = thisYear;
+  // Adjust year for ranges that span December -> January
+  if(month < today.getMonth()+1) year += 1;
+  return new Date(year, month-1, day, 23,59,59);
+}
+
+// Format countdown
+function formatCountdown(ms){
+  const totalSeconds = Math.floor(ms/1000);
+  const days = Math.floor(totalSeconds/86400);
+  const hours = Math.floor((totalSeconds%86400)/3600);
+  const minutes = Math.floor((totalSeconds%3600)/60);
+  const seconds = totalSeconds%60;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+// Render active banners
+sales.forEach(sale => {
+  // Determine start/end date for this year
+  let start = new Date(thisYear, sale.startMonth-1, sale.startDay, 0,0,0);
+  let end = new Date(thisYear, sale.endMonth-1, sale.endDay, 23,59,59);
+  if(sale.startMonth > sale.endMonth) {
+    // Sale spans Dec -> Jan
+    if(today.getMonth()+1 < sale.startMonth) start.setFullYear(thisYear-1);
+    if(today.getMonth()+1 < sale.startMonth) end.setFullYear(thisYear);
+    else end.setFullYear(thisYear+1);
+  }
+
+  if(today >= start && today <= end){
+    const div = document.createElement("div");
+    div.className = "sale-banner";
+
+    const img = document.createElement("img");
+    img.src = sale.image;
+    img.alt = sale.name;
+    if(sale.link) img.onclick = ()=> window.open(sale.link,"_blank");
+
+    const timer = document.createElement("div");
+    timer.className = "sale-timer";
+
+    div.appendChild(img);
+    div.appendChild(timer);
+    container.appendChild(div);
+
+    // Animate slide down
+    setTimeout(()=>{ div.style.maxHeight = div.scrollHeight + "px"; }, 50);
+
+    // Countdown
+    const interval = setInterval(()=>{
+      const now = new Date();
+      const remaining = end - now;
+      if(remaining <=0){ div.style.display="none"; clearInterval(interval); }
+      else timer.textContent = `${sale.name} ends in: ${formatCountdown(remaining)}`;
+    },1000);
+  }
+});
+</script>
 
 </body>
 </html>
